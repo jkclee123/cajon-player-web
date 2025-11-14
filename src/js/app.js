@@ -79,7 +79,8 @@ class App {
                 zoneManager: this.zoneManager,
                 audioManager: this.audioManager,
                 onZoneActivated: (zoneId) => {
-                    // Optional callback for zone activation
+                    // Hide error message on successful sound play
+                    this._hideError();
                 }
             });
             this.inputHandler.initialize();
@@ -129,6 +130,17 @@ class App {
     }
 
     /**
+     * Hides the error message
+     * @private
+     */
+    _hideError() {
+        if (this.errorMessage) {
+            this.errorMessage.classList.remove('show');
+            this.errorMessage.style.display = 'none';
+        }
+    }
+
+    /**
      * Sets up keyboard hint UI
      * @private
      */
@@ -147,17 +159,10 @@ class App {
             item.className = 'keyboard-key-item';
             item.dataset.zoneId = zone.id;
             
-            // const keySpan = document.createElement('span');
-            // keySpan.className = 'key';
-            // Support both single key (string) and multiple keys (array)
-            // const keys = Array.isArray(zone.keyboardKey) ? zone.keyboardKey : [zone.keyboardKey];
-            // keySpan.textContent = keys.map(k => k.toUpperCase()).join(', ');
-            
             const nameSpan = document.createElement('span');
             nameSpan.className = 'sound-name';
             nameSpan.textContent = zone.name;
             
-            // item.appendChild(keySpan);
             item.appendChild(nameSpan);
             
             keyboardKeysDiv.appendChild(item);
