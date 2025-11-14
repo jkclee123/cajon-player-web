@@ -70,11 +70,12 @@ Users can play cajon sounds using keyboard keys as an alternative input method. 
 - **FR-010**: System MUST handle cases where sound files fail to load gracefully
 - **FR-011**: System MUST work in modern web browsers without requiring plugins
 - **FR-012**: System MUST be responsive and work on both desktop and mobile devices
+- **FR-013**: System MUST use `.mp3` audio format for sound files (`.mov` files from `sounds/` directory converted to `.mp3` format during setup, then copied to `src/assets/sounds/`)
 
 ### Key Entities *(include if feature involves data)*
 
 - **Sound Zone**: Represents a clickable/tappable area on the cajon interface that triggers a specific sound. Has a visual location, associated sound file, and optional keyboard key assignment.
-- **Sound File**: Represents an audio file that can be played. Has a file path/identifier and corresponds to a specific cajon sound type (kick, snare, etc.).
+- **Sound File**: Represents an audio file that can be played. Has a file path/identifier (`.mp3` format), corresponds to a specific cajon sound type (kick, snare, etc.), and is located in `src/assets/sounds/` directory.
 
 ## Success Criteria *(mandatory)*
 
@@ -88,9 +89,17 @@ Users can play cajon sounds using keyboard keys as an alternative input method. 
 - **SC-006**: The visual interface is clearly understandable - 90% of first-time users can identify trigger zones without instructions
 - **SC-007**: Both input methods (visual click/tap and keyboard) are discoverable - users can identify keyboard controls within 30 seconds of use
 
+## Clarifications
+
+### Session 2024-12-19
+
+- Q: What audio format should be used for browser playback? → A: Use `.mp3` format (convert `.mov` files from `sounds/` directory to `.mp3` during setup)
+- Q: Sound file source location - `backup/` folder no longer exists, use files from `sounds/` folder? → A: Yes, use `.mov` files from `sounds/` directory, convert to `.mp3` format during application setup
+
 ## Assumptions
 
-- Sound files are pre-loaded and available in the `sound/` directory
+- Sound files are available as `.mov` format in the `sounds/` directory and will be converted to `.mp3` format during application setup
+- Sound files (after conversion to `.mp3`) are pre-loaded and available in the application's assets directory (`src/assets/sounds/`)
 - Users have modern browsers with HTML5 audio support
 - Users understand basic web application interaction (clicking, keyboard input)
 - The application does not require user authentication or data persistence
@@ -101,8 +110,9 @@ Users can play cajon sounds using keyboard keys as an alternative input method. 
 
 ## Dependencies
 
-- Sound files must be available in the project's sound directory
-- Browser must support HTML5 Audio API
+- Sound files must be available as `.mov` format in the `sounds/` directory and converted to `.mp3` format during setup
+- Conversion tooling required to convert `.mov` files to `.mp3` format (e.g., ffmpeg, or manual conversion)
+- Browser must support HTML5 Audio API (specifically `.mp3` format support)
 - Browser must support modern JavaScript (ES6+)
 - Browser must support CSS for styling the interface
 

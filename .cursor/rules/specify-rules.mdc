@@ -1,0 +1,30 @@
+# cajon-online Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-11-14
+
+## Active Technologies
+
+- JavaScript (ES6+), HTML5, CSS3 + None (vanilla web APIs: HTML5 Audio API, DOM API, Touch Events API) (1-cajon-player)
+
+## Project Structure
+
+```text
+backend/
+frontend/
+tests/
+```
+
+## Commands
+
+npm test && npm run lint
+
+## Code Style
+
+JavaScript (ES6+), HTML5, CSS3: Follow standard conventions
+
+## Recent Changes
+
+- 1-cajon-player: Added JavaScript (ES6+), HTML5, CSS3 + None (vanilla web APIs: HTML5 Audio API, DOM API, Touch Events API)
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->
