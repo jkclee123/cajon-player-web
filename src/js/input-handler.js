@@ -104,13 +104,21 @@ class InputHandler {
     handleKeydown(event) {
         if (!this.enabled || !this.hasFocus) return;
         
-        // Ignore modifier keys and special keys
-        if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) {
-            return;
-        }
+        // Check if shift keys are being used as primary keys (not modifiers)
+        const isShiftKey = event.code === 'ShiftLeft' || event.code === 'ShiftRight';
+        let keyToCheck;
         
-        const key = event.key.toLowerCase();
-        const zone = this.zoneManager.getZoneByKey(key);
+        if (isShiftKey) {
+            // Map shift key codes to our key names
+            keyToCheck = event.code === 'ShiftLeft' ? 'leftshift' : 'rightshift';
+        } else {
+            // Ignore modifier keys when used as modifiers (not primary keys)
+            if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) {
+                return;
+            }
+            keyToCheck = event.key.toLowerCase();
+        }
+        const zone = this.zoneManager.getZoneByKey(keyToCheck);
         
         if (zone) {
             event.preventDefault();
