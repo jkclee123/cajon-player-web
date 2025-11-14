@@ -20,6 +20,10 @@ build/
 *.swp
 *.swo
 *~
+.cursor/
+
+# Tools
+.specify/
 
 # OS
 .DS_Store
