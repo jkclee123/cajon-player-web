@@ -33,6 +33,9 @@ class TriggerZoneManager {
             throw new Error('Container element is required');
         }
 
+        if (window.DebugLogger) {
+            window.DebugLogger.log('TriggerZoneManager.initialize: creating zones', this.zones.length);
+        }
         this.zones.forEach(zone => {
             const zoneElement = this._createZoneElement(zone);
             this.container.appendChild(zoneElement);
@@ -119,6 +122,9 @@ class TriggerZoneManager {
     activateZone(zoneId) {
         const element = this.zoneElements.get(zoneId);
         if (element) {
+            if (window.DebugLogger) {
+                window.DebugLogger.log('TriggerZoneManager.activateZone:', zoneId);
+            }
             element.classList.add('active');
             
             // Remove active class after visual feedback duration

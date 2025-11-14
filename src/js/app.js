@@ -31,6 +31,9 @@ class App {
      */
     async init() {
         try {
+            if (window.DebugLogger) {
+                window.DebugLogger.log('App.init: start. zones=', (this.zones && this.zones.length) || 0, 'sounds=', (this.sounds && this.sounds.length) || 0);
+            }
             // Get DOM references
             this.loadingIndicator = document.getElementById('loading-indicator');
             this.errorMessage = document.getElementById('error-message');
@@ -49,10 +52,16 @@ class App {
             // Set up audio loading progress tracking
             this.audioManager.on('progress', (progress) => {
                 this._updateLoadingProgress(progress);
+                if (window.DebugLogger) {
+                    window.DebugLogger.log('Audio load progress:', progress && progress.loaded, '/', progress && progress.total);
+                }
             });
             
             this.audioManager.on('error', (error) => {
                 this._handleError(error);
+                if (window.DebugLogger) {
+                    window.DebugLogger.error('AudioManager error:', error && (error.message || error));
+                }
             });
             
             // Initialize TriggerZoneManager
@@ -71,6 +80,9 @@ class App {
             this.zoneManager.initialize();
             
             // Preload all sounds
+            if (window.DebugLogger) {
+                window.DebugLogger.log('App.init: calling preloadAll');
+            }
             await this.audioManager.preloadAll();
             
             // Initialize InputHandler
@@ -81,6 +93,9 @@ class App {
                 onZoneActivated: (zoneId) => {
                     // Hide error message on successful sound play
                     this._hideError();
+                    if (window.DebugLogger) {
+                        window.DebugLogger.log('onZoneActivated:', zoneId);
+                    }
                 }
             });
             this.inputHandler.initialize();
@@ -97,9 +112,15 @@ class App {
             this._setupFocusTracking();
             
             this.isReady = true;
+            if (window.DebugLogger) {
+                window.DebugLogger.log('App.init: complete. isReady=', this.isReady);
+            }
             
         } catch (error) {
             this._handleError(error);
+            if (window.DebugLogger) {
+                window.DebugLogger.error('App.init: failed', error && (error.message || error));
+            }
             throw error;
         }
     }

@@ -16,6 +16,7 @@
     <link rel="apple-touch-icon-precomposed" href="src/assets/images/cajon.svg">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="src/css/styles.css">
+    <link rel="stylesheet" href="src/css/debug-logger.css">
     <!-- Preload audio files for faster loading on mobile -->
     <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-snare-1.mp3">
     <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-snare-2.mp3">
@@ -35,6 +36,12 @@
 <body>
     <div id="app">
         <div id="loading-indicator">Loading sounds...</div>
+        <div id="debug-panel">
+            <div id="debug-controls">
+                <button id="clear-debug" type="button">Clear</button>
+            </div>
+            <pre id="debug-content">Debug panel initializing...</pre>
+        </div>
         <div id="cajon-container">
             <img id="cajon-image" src="src/assets/images/cajon.svg" alt="Cajon drum" draggable="false" onerror="this.style.display='none'">
             <!-- Trigger zones will be added here dynamically -->
@@ -44,6 +51,7 @@
         </div>
         <div id="error-message" style="display: none;"></div>
     </div>
+    <script src="src/js/debug-logger.js"></script>
     <script src="src/js/zone-config.js"></script>
     <script src="src/js/audio-manager.js"></script>
     <script src="src/js/trigger-zones.js"></script>

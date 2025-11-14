@@ -43,8 +43,14 @@ class AudioManager {
                 latencyHint: 'interactive',
                 sampleRate: 44100 // Standard sample rate
             });
+            if (window.DebugLogger) {
+                window.DebugLogger.log('AudioContext created. state=', this.audioContext.state, 'sampleRate=', this.audioContext.sampleRate);
+            }
         } catch (error) {
             console.error('Failed to initialize AudioContext:', error);
+            if (window.DebugLogger) {
+                window.DebugLogger.error('Failed to initialize AudioContext:', error && (error.message || error));
+            }
             throw error;
         }
     }
@@ -55,18 +61,33 @@ class AudioManager {
      */
     async unlockAudioContext() {
         if (this.isContextUnlocked) {
+            if (window.DebugLogger) {
+                window.DebugLogger.log('unlockAudioContext: already unlocked, state=', this.audioContext && this.audioContext.state);
+            }
             return;
         }
         
         if (this.audioContext.state === 'suspended') {
             try {
+                if (window.DebugLogger) {
+                    window.DebugLogger.log('unlockAudioContext: resuming AudioContext from suspended...');
+                }
                 await this.audioContext.resume();
                 this.isContextUnlocked = true;
+                if (window.DebugLogger) {
+                    window.DebugLogger.log('unlockAudioContext: resumed. state=', this.audioContext.state);
+                }
             } catch (error) {
                 console.error('Failed to resume audio context:', error);
+                if (window.DebugLogger) {
+                    window.DebugLogger.error('Failed to resume audio context:', error && (error.message || error));
+                }
             }
         } else {
             this.isContextUnlocked = true;
+            if (window.DebugLogger) {
+                window.DebugLogger.log('unlockAudioContext: context not suspended. state=', this.audioContext.state);
+            }
         }
     }
 
@@ -75,6 +96,9 @@ class AudioManager {
      * @returns {Promise<void>}
      */
     async preloadAll() {
+        if (window.DebugLogger) {
+            window.DebugLogger.log('preloadAll: start. sounds=', this.sounds.length);
+        }
         this.emit('loading');
         
         const loadPromises = this.sounds.map(soundPath => this._loadSound(soundPath));
@@ -82,8 +106,14 @@ class AudioManager {
         try {
             await Promise.allSettled(loadPromises);
             this.emit('loaded');
+            if (window.DebugLogger) {
+                window.DebugLogger.log('preloadAll: completed. loaded=', this.loadedSounds.size, 'errors=', this.loadErrors.size);
+            }
         } catch (error) {
             this.emit('error', error);
+            if (window.DebugLogger) {
+                window.DebugLogger.error('preloadAll: error', error && (error.message || error));
+            }
             throw error;
         }
     }
@@ -94,6 +124,9 @@ class AudioManager {
      */
     async _loadSound(soundPath) {
         try {
+            if (window.DebugLogger) {
+                window.DebugLogger.log('loadSound: fetching', soundPath);
+            }
             // Fetch audio file
             const response = await fetch(soundPath);
             if (!response.ok) {
@@ -115,11 +148,17 @@ class AudioManager {
                 loaded: this.loadedSounds.size,
                 total: this.sounds.length
             });
+            if (window.DebugLogger) {
+                window.DebugLogger.log('loadSound: decoded and stored', soundPath, 'duration=', audioBuffer && audioBuffer.duration);
+            }
         } catch (error) {
             const loadError = new Error(`Failed to load sound: ${soundPath}`);
             loadError.originalError = error;
             this.loadErrors.set(soundPath, loadError);
             this.emit('error', loadError);
+            if (window.DebugLogger) {
+                window.DebugLogger.error('loadSound: error for', soundPath, error && (error.message || error));
+            }
             // Don't throw - allow partial functionality
         }
     }
@@ -140,8 +179,28 @@ class AudioManager {
         }
 
         // Ensure audio context is unlocked
+        // Note: On first tap, unlock should already be completed by InputHandler before calling playSound
+        // This check is a safety net for edge cases
         if (!this.isContextUnlocked) {
+            if (window.DebugLogger) {
+                window.DebugLogger.log('playSound: context locked, unlocking before play. state=', this.audioContext && this.audioContext.state, 'WARNING: unlock should happen in gesture handler');
+            }
             await this.unlockAudioContext();
+        }
+        
+        // Double-check context state before creating source node
+        if (this.audioContext.state === 'suspended') {
+            if (window.DebugLogger) {
+                window.DebugLogger.log('playSound: context still suspended after unlock attempt, forcing resume. state=', this.audioContext.state);
+            }
+            try {
+                await this.audioContext.resume();
+            } catch (err) {
+                if (window.DebugLogger) {
+                    window.DebugLogger.error('playSound: failed to resume context', err && (err.message || err));
+                }
+                throw new Error('AudioContext is suspended and cannot be resumed');
+            }
         }
 
         const audioBuffer = this.audioBuffers.get(soundPath);
@@ -158,11 +217,20 @@ class AudioManager {
         
         try {
             // Start playback immediately (0 = now)
+            if (window.DebugLogger) {
+                window.DebugLogger.log('playSound: starting', soundPath, 'ctxState=', this.audioContext.state, 'unlocked=', this.isContextUnlocked);
+            }
             sourceNode.start(0);
+            if (window.DebugLogger) {
+                window.DebugLogger.log('playSound: started', soundPath);
+            }
         } catch (error) {
             const playbackError = new Error(`Failed to play sound: ${soundPath}`);
             playbackError.originalError = error;
             this.emit('error', playbackError);
+            if (window.DebugLogger) {
+                window.DebugLogger.error('playSound: error for', soundPath, error && (error.message || error));
+            }
             throw playbackError;
         }
     }

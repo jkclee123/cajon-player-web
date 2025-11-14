@@ -36,6 +36,10 @@ class InputHandler {
             throw new Error('Container element required for InputHandler');
         }
         
+        if (window.DebugLogger) {
+            window.DebugLogger.log('InputHandler.initialize: binding events on container=', this.container && this.container.id);
+        }
+        
         // Pointer events (handles mouse, touch, pen) - attach to container for better performance
         // Non-passive because we may call preventDefault() when zone is found
         this.container.addEventListener('pointerdown', this.boundHandlePointerDown, { passive: false });
@@ -88,29 +92,32 @@ class InputHandler {
      * Handles pointer down events (mouse, touch, pen)
      * @param {PointerEvent} event
      */
-    handlePointerDown(event) {
+    async handlePointerDown(event) {
         if (!this.enabled) return;
         
-        // Unlock audio context on first interaction
-        if (!this.audioUnlocked && this.audioManager) {
-            this.audioManager.unlockAudioContext().catch(err => {
-                console.error('Failed to unlock audio context:', err);
-            });
-            this.audioUnlocked = true;
+        // Find zone first (before async operations)
+        let zone = null;
+        let clickedElement = event.target;
+        
+        if (window.DebugLogger) {
+            try {
+                window.DebugLogger.log('handlePointerDown: target=', clickedElement && (clickedElement.className || clickedElement.id || clickedElement.tagName));
+            } catch (_) {}
         }
         
         // Check if clicked element is a keyboard-key-item
-        let clickedElement = event.target;
         while (clickedElement && clickedElement !== document.body) {
             if (clickedElement.classList && clickedElement.classList.contains('keyboard-key-item')) {
                 const zoneId = clickedElement.dataset.zoneId;
                 if (zoneId) {
-                    const zone = this.zoneManager.getZoneById(zoneId);
+                    zone = this.zoneManager.getZoneById(zoneId);
                     if (zone) {
                         event.preventDefault();
                         event.stopPropagation();
-                        this._triggerZone(zone);
-                        return;
+                        if (window.DebugLogger) {
+                            window.DebugLogger.log('handlePointerDown: keyboard-key-item -> zone', zone.id);
+                        }
+                        break;
                     }
                 }
             }
@@ -118,12 +125,48 @@ class InputHandler {
         }
         
         // Otherwise, check for trigger zone element
-        const zone = this.zoneManager.getZoneByElement(event.target);
+        if (!zone) {
+            zone = this.zoneManager.getZoneByElement(event.target);
+            if (zone) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (window.DebugLogger) {
+                    window.DebugLogger.log('handlePointerDown: trigger zone found', zone.id);
+                }
+            } else {
+                if (window.DebugLogger) {
+                    window.DebugLogger.log('handlePointerDown: no trigger zone found for target');
+                }
+                return; // No zone found, exit early
+            }
+        }
+        
+        // CRITICAL: Unlock audio context BEFORE playing sound, but within the same gesture handler
+        // On iOS Safari, both resume() and start() must be called synchronously within user gesture
+        if (!this.audioUnlocked && this.audioManager) {
+            if (window.DebugLogger) {
+                window.DebugLogger.log('handlePointerDown: requesting unlock. ctxState=', this.audioManager.audioContext && this.audioManager.audioContext.state, 'pointerType=', event.pointerType);
+            }
+            try {
+                // AWAIT the unlock to ensure it completes before playSound is called
+                await this.audioManager.unlockAudioContext();
+                this.audioUnlocked = true;
+                if (window.DebugLogger) {
+                    window.DebugLogger.log('handlePointerDown: unlock completed. ctxState=', this.audioManager.audioContext && this.audioManager.audioContext.state);
+                }
+            } catch (err) {
+                console.error('Failed to unlock audio context:', err);
+                if (window.DebugLogger) {
+                    window.DebugLogger.error('handlePointerDown: unlock failed', err && (err.message || err));
+                }
+                // Still set flag to prevent retry loops
+                this.audioUnlocked = true;
+            }
+        }
+        
+        // Now trigger zone - unlock is complete, so playSound should work
         if (zone) {
-            // Prevent default to avoid double-triggering on mobile
-            event.preventDefault();
-            event.stopPropagation();
-            this._triggerZone(zone);
+            await this._triggerZone(zone);
         }
     }
 
@@ -131,16 +174,8 @@ class InputHandler {
      * Handles keyboard keydown events
      * @param {KeyboardEvent} event
      */
-    handleKeydown(event) {
+    async handleKeydown(event) {
         if (!this.enabled || !this.hasFocus) return;
-        
-        // Unlock audio context on first interaction
-        if (!this.audioUnlocked && this.audioManager) {
-            this.audioManager.unlockAudioContext().catch(err => {
-                console.error('Failed to unlock audio context:', err);
-            });
-            this.audioUnlocked = true;
-        }
         
         // Check if shift keys are being used as primary keys (not modifiers)
         const isShiftKey = event.code === 'ShiftLeft' || event.code === 'ShiftRight';
@@ -158,11 +193,39 @@ class InputHandler {
         }
         const zone = this.zoneManager.getZoneByKey(keyToCheck);
         
-        if (zone) {
-            event.preventDefault();
-            event.stopPropagation();
-            this._triggerZone(zone);
+        if (!zone) {
+            if (window.DebugLogger) {
+                window.DebugLogger.log('handleKeydown: no zone for key', keyToCheck);
+            }
+            return;
         }
+        
+        event.preventDefault();
+        event.stopPropagation();
+        if (window.DebugLogger) {
+            window.DebugLogger.log('handleKeydown: zone found', zone.id, 'for key', keyToCheck);
+        }
+        
+        // CRITICAL: Unlock audio context BEFORE playing sound, but within the same gesture handler
+        if (!this.audioUnlocked && this.audioManager) {
+            try {
+                await this.audioManager.unlockAudioContext();
+                this.audioUnlocked = true;
+                if (window.DebugLogger) {
+                    window.DebugLogger.log('handleKeydown: unlock completed. ctxState=', this.audioManager.audioContext && this.audioManager.audioContext.state, 'key=', event.key, 'code=', event.code);
+                }
+            } catch (err) {
+                console.error('Failed to unlock audio context:', err);
+                if (window.DebugLogger) {
+                    window.DebugLogger.error('handleKeydown: unlock failed', err && (err.message || err));
+                }
+                // Still set flag to prevent retry loops
+                this.audioUnlocked = true;
+            }
+        }
+        
+        // Now trigger zone - unlock is complete, so playSound should work
+        await this._triggerZone(zone);
     }
 
     /**
@@ -181,10 +244,10 @@ class InputHandler {
 
     /**
      * Triggers a zone (plays sound and activates visual feedback)
-     * Visual feedback is triggered IMMEDIATELY, audio plays non-blocking
+     * Visual feedback is triggered IMMEDIATELY, audio plays after unlock completes
      * @private
      */
-    _triggerZone(zone) {
+    async _triggerZone(zone) {
         // Activate visual feedback IMMEDIATELY (before audio)
         this.zoneManager.activateZone(zone.id);
         
@@ -193,10 +256,18 @@ class InputHandler {
             this.onZoneActivated(zone.id);
         }
         
-        // Play sound asynchronously (don't await - fire and forget for lowest latency)
-        this.audioManager.playSound(zone.soundFile).catch(error => {
+        // Play sound - await to ensure it completes (critical for first tap on iOS)
+        if (window.DebugLogger) {
+            window.DebugLogger.log('_triggerZone: play', zone.id, '->', zone.soundFile);
+        }
+        try {
+            await this.audioManager.playSound(zone.soundFile);
+        } catch (error) {
             console.error(`Failed to play sound for zone ${zone.id}:`, error);
+            if (window.DebugLogger) {
+                window.DebugLogger.error('_triggerZone: failed play for zone', zone && zone.id, error && (error.message || error));
+            }
             // Don't block UI - allow retry on next interaction
-        });
+        }
     }
 }
