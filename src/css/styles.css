@@ -51,6 +51,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    /* Performance optimizations */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #cajon-image {
@@ -62,6 +65,9 @@ body {
     -webkit-user-drag: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    /* Performance optimizations */
+    touch-action: manipulation;
+    will-change: transform;
 }
 
 /* Trigger zone base styles */
@@ -73,6 +79,10 @@ body {
     cursor: pointer;
     transition: all 0.1s ease;
     z-index: 10;
+    /* Performance optimizations for mobile */
+    touch-action: manipulation; /* Eliminates 300ms click delay */
+    will-change: transform, opacity; /* Hint browser to optimize these properties */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
 }
 
 .trigger-zone:hover {

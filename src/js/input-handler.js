@@ -1,35 +1,46 @@
 /**
- * InputHandler - Handles user input events (mouse, touch, keyboard)
+ * InputHandler - Handles user input events (pointer, keyboard)
  * Coordinates with TriggerZoneManager and AudioManager
+ * Optimized for mobile performance with immediate visual feedback
  */
 
 class InputHandler {
     constructor(config) {
         this.zoneManager = config.zoneManager;
         this.audioManager = config.audioManager;
+        this.container = config.container || null; // Container element for event delegation
         this.onZoneActivated = config.onZoneActivated || null;
         this.enabled = true;
         this.hasFocus = true;
         
+        // Track if we've unlocked audio context
+        this.audioUnlocked = false;
+        
         // Bound event handlers (for cleanup)
-        this.boundHandleClick = this.handleClick.bind(this);
-        this.boundHandleTouch = this.handleTouch.bind(this);
+        this.boundHandlePointerDown = this.handlePointerDown.bind(this);
         this.boundHandleKeydown = this.handleKeydown.bind(this);
         this.boundHandleFocus = this.handleFocus.bind(this);
         this.boundHandleBlur = this.handleBlur.bind(this);
     }
 
     /**
-     * Attaches event listeners for mouse, touch, and keyboard input
+     * Attaches event listeners for pointer and keyboard input
      */
     initialize() {
-        // Mouse click events
-        document.addEventListener('click', this.boundHandleClick, true);
+        // Get container element from zoneManager if not provided
+        if (!this.container) {
+            this.container = this.zoneManager.container;
+        }
         
-        // Touch events
-        document.addEventListener('touchstart', this.boundHandleTouch, { passive: false });
+        if (!this.container) {
+            throw new Error('Container element required for InputHandler');
+        }
         
-        // Keyboard events
+        // Pointer events (handles mouse, touch, pen) - attach to container for better performance
+        // Non-passive because we may call preventDefault() when zone is found
+        this.container.addEventListener('pointerdown', this.boundHandlePointerDown, { passive: false });
+        
+        // Keyboard events - still on document for global keyboard support
         document.addEventListener('keydown', this.boundHandleKeydown);
         
         // Focus/blur events for keyboard input
@@ -41,8 +52,9 @@ class InputHandler {
      * Removes all event listeners
      */
     destroy() {
-        document.removeEventListener('click', this.boundHandleClick, true);
-        document.removeEventListener('touchstart', this.boundHandleTouch);
+        if (this.container) {
+            this.container.removeEventListener('pointerdown', this.boundHandlePointerDown);
+        }
         document.removeEventListener('keydown', this.boundHandleKeydown);
         window.removeEventListener('focus', this.boundHandleFocus);
         window.removeEventListener('blur', this.boundHandleBlur);
@@ -63,34 +75,23 @@ class InputHandler {
     }
 
     /**
-     * Handles mouse click events
-     * @param {MouseEvent} event
+     * Handles pointer down events (mouse, touch, pen)
+     * @param {PointerEvent} event
      */
-    handleClick(event) {
+    handlePointerDown(event) {
         if (!this.enabled) return;
+        
+        // Unlock audio context on first interaction
+        if (!this.audioUnlocked && this.audioManager) {
+            this.audioManager.unlockAudioContext().catch(err => {
+                console.error('Failed to unlock audio context:', err);
+            });
+            this.audioUnlocked = true;
+        }
         
         const zone = this.zoneManager.getZoneByElement(event.target);
         if (zone) {
-            event.preventDefault();
-            event.stopPropagation();
-            this._triggerZone(zone);
-        }
-    }
-
-    /**
-     * Handles touch events
-     * @param {TouchEvent} event
-     */
-    handleTouch(event) {
-        if (!this.enabled) return;
-        
-        const touch = event.touches[0];
-        if (!touch) return;
-        
-        const element = document.elementFromPoint(touch.clientX, touch.clientY);
-        const zone = this.zoneManager.getZoneByElement(element);
-        
-        if (zone) {
+            // Prevent default to avoid double-triggering on mobile
             event.preventDefault();
             event.stopPropagation();
             this._triggerZone(zone);
@@ -103,6 +104,14 @@ class InputHandler {
      */
     handleKeydown(event) {
         if (!this.enabled || !this.hasFocus) return;
+        
+        // Unlock audio context on first interaction
+        if (!this.audioUnlocked && this.audioManager) {
+            this.audioManager.unlockAudioContext().catch(err => {
+                console.error('Failed to unlock audio context:', err);
+            });
+            this.audioUnlocked = true;
+        }
         
         // Check if shift keys are being used as primary keys (not modifiers)
         const isShiftKey = event.code === 'ShiftLeft' || event.code === 'ShiftRight';
@@ -143,24 +152,22 @@ class InputHandler {
 
     /**
      * Triggers a zone (plays sound and activates visual feedback)
+     * Visual feedback is triggered IMMEDIATELY, audio plays non-blocking
      * @private
      */
-    async _triggerZone(zone) {
-        try {
-            // Play sound
-            await this.audioManager.playSound(zone.soundFile);
-            
-            // Activate visual feedback
-            this.zoneManager.activateZone(zone.id);
-            
-            // Call optional callback
-            if (this.onZoneActivated) {
-                this.onZoneActivated(zone.id);
-            }
-        } catch (error) {
-            console.error(`Failed to trigger zone ${zone.id}:`, error);
-            // Don't block UI - allow retry on next interaction
+    _triggerZone(zone) {
+        // Activate visual feedback IMMEDIATELY (before audio)
+        this.zoneManager.activateZone(zone.id);
+        
+        // Call optional callback immediately
+        if (this.onZoneActivated) {
+            this.onZoneActivated(zone.id);
         }
+        
+        // Play sound asynchronously (don't await - fire and forget for lowest latency)
+        this.audioManager.playSound(zone.soundFile).catch(error => {
+            console.error(`Failed to play sound for zone ${zone.id}:`, error);
+            // Don't block UI - allow retry on next interaction
+        });
     }
 }
-

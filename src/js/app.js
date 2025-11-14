@@ -43,8 +43,7 @@ class App {
             
             // Initialize AudioManager
             this.audioManager = new AudioManager({
-                sounds: this.sounds,
-                poolSize: 3
+                sounds: this.sounds
             });
             
             // Set up audio loading progress tracking
@@ -65,7 +64,7 @@ class App {
             this.zoneManager = new TriggerZoneManager({
                 zones: this.zones,
                 container: cajonContainer,
-                cajonImage: 'src/assets/images/cajon.png'
+                cajonImage: 'src/assets/images/cajon.svg'
             });
             
             // Initialize zones (create DOM elements)
@@ -78,6 +77,7 @@ class App {
             this.inputHandler = new InputHandler({
                 zoneManager: this.zoneManager,
                 audioManager: this.audioManager,
+                container: cajonContainer, // Pass container for event delegation
                 onZoneActivated: (zoneId) => {
                     // Hide error message on successful sound play
                     this._hideError();
