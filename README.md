@@ -1,4 +1,4 @@
-# Cajon Online
+# Cajon Player Web
 
 A web-based interactive cajon (percussion instrument) player that allows users to play cajon sounds through their browser. Play sounds by clicking/tapping on visual trigger zones or using keyboard keys.
 

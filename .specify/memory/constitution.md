@@ -11,7 +11,7 @@ Templates requiring updates:
 Follow-up TODOs: None
 -->
 
-# Cajon Online Constitution
+# Cajon Player Constitution
 
 ## Core Principles
 
