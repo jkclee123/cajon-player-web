@@ -1,0 +1,23 @@
+{
+  "name": "Cajon Player",
+  "short_name": "Cajon Player",
+  "description": "An interactive web-based cajon percussion instrument player",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF9811",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "src/assets/images/cajon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "entertainment"],
+  "screenshots": [],
+  "shortcuts": [],
+  "prefer_related_applications": false
+}
+

@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#FF9811">
+    <meta name="description" content="An interactive web-based cajon percussion instrument player">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cajon Player">
     <title>Cajon Player</title>
     <link rel="icon" type="image/svg+xml" href="src/assets/images/cajon.svg">
     <link rel="icon" type="image/x-icon" href="src/assets/images/cajon.svg">
     <link rel="apple-touch-icon" href="src/assets/images/cajon.svg">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="src/css/styles.css">
     <!-- Preload audio files for faster loading on mobile -->
     <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-snare-1.mp3">
@@ -42,6 +48,30 @@
     <script src="src/js/input-handler.js"></script>
     <script src="src/js/app.js"></script>
     <script>
+        // Register Service Worker for PWA support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker available, prompt user to refresh
+                                    console.log('New service worker available. Refresh to update.');
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
         // Initialize app when DOM is ready
         document.addEventListener('DOMContentLoaded', async () => {
             const app = new App({
