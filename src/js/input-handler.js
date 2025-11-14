@@ -149,7 +149,7 @@ class InputHandler {
             }
             try {
                 // AWAIT the unlock to ensure it completes before playSound is called
-                await this.audioManager.unlockAudioContext();
+                await this.audioManager.unlockAudioContext({ fromGesture: true });
                 this.audioUnlocked = true;
                 if (window.DebugLogger) {
                     window.DebugLogger.log('handlePointerDown: unlock completed. ctxState=', this.audioManager.audioContext && this.audioManager.audioContext.state);
@@ -209,7 +209,7 @@ class InputHandler {
         // CRITICAL: Unlock audio context BEFORE playing sound, but within the same gesture handler
         if (!this.audioUnlocked && this.audioManager) {
             try {
-                await this.audioManager.unlockAudioContext();
+                await this.audioManager.unlockAudioContext({ fromGesture: true });
                 this.audioUnlocked = true;
                 if (window.DebugLogger) {
                     window.DebugLogger.log('handleKeydown: unlock completed. ctxState=', this.audioManager.audioContext && this.audioManager.audioContext.state, 'key=', event.key, 'code=', event.code);

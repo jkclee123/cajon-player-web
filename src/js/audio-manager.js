@@ -6,15 +6,18 @@
 class AudioManager {
     constructor(config) {
         this.sounds = config.sounds || [];
-        this.poolSize = config.poolSize || 6; // Increased pool size for fast rolls
         
         // Web Audio API setup
         this.audioContext = null;
         this.audioBuffers = new Map(); // Map<soundPath, AudioBuffer>
         this.loadedSounds = new Set();
         this.loadErrors = new Map(); // Map<soundPath, Error>
-        this.sourceNodes = new Map(); // Map<soundPath, Array<AudioBufferSourceNode>>
         this.isContextUnlocked = false;
+        this._unlockPromise = null;
+        this._autoUnlockAttached = false;
+        this._gestureUnlockHandler = null;
+        this._gestureUnlockEvents = ['pointerdown', 'touchstart', 'touchend', 'mousedown', 'keydown'];
+        this._scratchBuffer = null;
         
         this.listeners = {
             loading: [],
@@ -25,6 +28,7 @@ class AudioManager {
         
         // Initialize audio context (will be unlocked on first user interaction)
         this._initAudioContext();
+        this._setupGestureUnlock();
     }
 
     /**
@@ -56,10 +60,111 @@ class AudioManager {
     }
 
     /**
+     * Registers global gesture listeners to auto-unlock the AudioContext on first interaction
+     * @private
+     */
+    _setupGestureUnlock() {
+        if (!this.audioContext || this._autoUnlockAttached) {
+            return;
+        }
+        if (typeof window === 'undefined' || typeof document === 'undefined') {
+            return;
+        }
+        this._gestureUnlockHandler = this._handleGestureUnlockEvent.bind(this);
+        this._gestureUnlockEvents.forEach(eventName => {
+            window.addEventListener(eventName, this._gestureUnlockHandler, { capture: true, passive: true });
+        });
+        this._autoUnlockAttached = true;
+    }
+
+    /**
+     * Removes global gesture listeners once the context has been unlocked
+     * @private
+     */
+    _removeGestureUnlockListeners() {
+        if (!this._autoUnlockAttached || !this._gestureUnlockHandler) {
+            return;
+        }
+        this._gestureUnlockEvents.forEach(eventName => {
+            window.removeEventListener(eventName, this._gestureUnlockHandler, true);
+        });
+        this._autoUnlockAttached = false;
+        this._gestureUnlockHandler = null;
+    }
+
+    /**
+     * Handles the first qualifying user gesture to trigger the unlock routine
+     * @param {Event} event
+     * @private
+     */
+    _handleGestureUnlockEvent(event) {
+        if (this.isContextUnlocked || !this.audioContext) {
+            this._removeGestureUnlockListeners();
+            return;
+        }
+        if (window.DebugLogger) {
+            window.DebugLogger.log('AudioManager: auto gesture unlock attempt via', event && event.type);
+        }
+        this.unlockAudioContext({ fromGesture: true }).catch(error => {
+            console.error('AudioManager: auto unlock failed', error);
+            if (window.DebugLogger) {
+                window.DebugLogger.error('AudioManager auto unlock failed', error && (error.message || error));
+            }
+        });
+    }
+
+    /**
+     * Creates and starts a silent buffer to prime iOS audio restrictions
+     * Must be called directly within the user gesture stack.
+     * @private
+     */
+    _primeAudioContext() {
+        if (!this.audioContext) {
+            return;
+        }
+        if (!this._scratchBuffer) {
+            const sampleRate = this.audioContext.sampleRate || 44100;
+            this._scratchBuffer = this.audioContext.createBuffer(1, 1, sampleRate);
+        }
+        const sourceNode = this.audioContext.createBufferSource();
+        sourceNode.buffer = this._scratchBuffer;
+        let gainNode = null;
+        if (typeof this.audioContext.createGain === 'function') {
+            gainNode = this.audioContext.createGain();
+            gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+            sourceNode.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+        } else {
+            sourceNode.connect(this.audioContext.destination);
+        }
+        sourceNode.onended = () => {
+            try {
+                sourceNode.disconnect();
+                if (gainNode) {
+                    gainNode.disconnect();
+                }
+            } catch (_) {
+                // Ignore cleanup errors
+            }
+        };
+        try {
+            sourceNode.start(0);
+        } catch (error) {
+            if (window.DebugLogger) {
+                window.DebugLogger.error('AudioManager: primeAudioContext start failed', error && (error.message || error));
+            }
+        }
+    }
+
+    /**
      * Unlocks/resumes the audio context (call on first user interaction)
      * @returns {Promise<void>}
      */
-    async unlockAudioContext() {
+    async unlockAudioContext(options = {}) {
+        const { fromGesture = false } = options;
+        if (!this.audioContext) {
+            throw new Error('AudioContext not initialized');
+        }
         if (this.isContextUnlocked) {
             if (window.DebugLogger) {
                 window.DebugLogger.log('unlockAudioContext: already unlocked, state=', this.audioContext && this.audioContext.state);
@@ -67,27 +172,41 @@ class AudioManager {
             return;
         }
         
-        if (this.audioContext.state === 'suspended') {
+        const needsResume = this.audioContext.state === 'suspended' || this.audioContext.state === 'interrupted';
+        
+        if (needsResume) {
+            if (fromGesture) {
+                this._primeAudioContext();
+            }
+            if (window.DebugLogger) {
+                window.DebugLogger.log('unlockAudioContext: attempting resume. state=', this.audioContext.state, 'fromGesture=', fromGesture);
+            }
             try {
-                if (window.DebugLogger) {
-                    window.DebugLogger.log('unlockAudioContext: resuming AudioContext from suspended...');
+                if (!this._unlockPromise) {
+                    this._unlockPromise = this.audioContext.resume();
                 }
-                await this.audioContext.resume();
-                this.isContextUnlocked = true;
-                if (window.DebugLogger) {
-                    window.DebugLogger.log('unlockAudioContext: resumed. state=', this.audioContext.state);
+                if (this._unlockPromise && typeof this._unlockPromise.then === 'function') {
+                    await this._unlockPromise;
                 }
             } catch (error) {
                 console.error('Failed to resume audio context:', error);
                 if (window.DebugLogger) {
                     window.DebugLogger.error('Failed to resume audio context:', error && (error.message || error));
                 }
+                this._unlockPromise = null;
+                throw error;
             }
-        } else {
-            this.isContextUnlocked = true;
+            this._unlockPromise = null;
+        }
+        
+        this.isContextUnlocked = this.audioContext.state === 'running' || !needsResume;
+        if (this.isContextUnlocked) {
+            this._removeGestureUnlockListeners();
             if (window.DebugLogger) {
-                window.DebugLogger.log('unlockAudioContext: context not suspended. state=', this.audioContext.state);
+                window.DebugLogger.log('unlockAudioContext: context unlocked. state=', this.audioContext.state);
             }
+        } else if (window.DebugLogger) {
+            window.DebugLogger.warn && window.DebugLogger.warn('unlockAudioContext: context state after resume=', this.audioContext.state);
         }
     }
 
@@ -141,9 +260,6 @@ class AudioManager {
             this.audioBuffers.set(soundPath, audioBuffer);
             this.loadedSounds.add(soundPath);
             
-            // Pre-create source node pool for this sound
-            this.sourceNodes.set(soundPath, []);
-            
             this.emit('progress', {
                 loaded: this.loadedSounds.size,
                 total: this.sounds.length
@@ -178,29 +294,14 @@ class AudioManager {
             throw new Error(`Sound not yet loaded: ${soundPath}`);
         }
 
-        // Ensure audio context is unlocked
+        // Ensure audio context is unlocked and running
         // Note: On first tap, unlock should already be completed by InputHandler before calling playSound
-        // This check is a safety net for edge cases
-        if (!this.isContextUnlocked) {
+        // This check is a safety net for edge cases (e.g., context suspended after tab backgrounding)
+        if (!this.isContextUnlocked || this.audioContext.state === 'suspended') {
             if (window.DebugLogger) {
-                window.DebugLogger.log('playSound: context locked, unlocking before play. state=', this.audioContext && this.audioContext.state, 'WARNING: unlock should happen in gesture handler');
+                window.DebugLogger.log('playSound: context needs unlock/resume. state=', this.audioContext.state, 'unlocked=', this.isContextUnlocked);
             }
-            await this.unlockAudioContext();
-        }
-        
-        // Double-check context state before creating source node
-        if (this.audioContext.state === 'suspended') {
-            if (window.DebugLogger) {
-                window.DebugLogger.log('playSound: context still suspended after unlock attempt, forcing resume. state=', this.audioContext.state);
-            }
-            try {
-                await this.audioContext.resume();
-            } catch (err) {
-                if (window.DebugLogger) {
-                    window.DebugLogger.error('playSound: failed to resume context', err && (err.message || err));
-                }
-                throw new Error('AudioContext is suspended and cannot be resumed');
-            }
+            await this.unlockAudioContext({ fromGesture: false });
         }
 
         const audioBuffer = this.audioBuffers.get(soundPath);
