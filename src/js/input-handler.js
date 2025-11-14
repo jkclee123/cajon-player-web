@@ -40,6 +40,12 @@ class InputHandler {
         // Non-passive because we may call preventDefault() when zone is found
         this.container.addEventListener('pointerdown', this.boundHandlePointerDown, { passive: false });
         
+        // Also listen for clicks on keyboard-key-item elements (they're outside the cajon-container)
+        const keyboardHint = document.getElementById('keyboard-hint');
+        if (keyboardHint) {
+            keyboardHint.addEventListener('pointerdown', this.boundHandlePointerDown, { passive: false });
+        }
+        
         // Keyboard events - still on document for global keyboard support
         document.addEventListener('keydown', this.boundHandleKeydown);
         
@@ -54,6 +60,10 @@ class InputHandler {
     destroy() {
         if (this.container) {
             this.container.removeEventListener('pointerdown', this.boundHandlePointerDown);
+        }
+        const keyboardHint = document.getElementById('keyboard-hint');
+        if (keyboardHint) {
+            keyboardHint.removeEventListener('pointerdown', this.boundHandlePointerDown);
         }
         document.removeEventListener('keydown', this.boundHandleKeydown);
         window.removeEventListener('focus', this.boundHandleFocus);
@@ -89,6 +99,25 @@ class InputHandler {
             this.audioUnlocked = true;
         }
         
+        // Check if clicked element is a keyboard-key-item
+        let clickedElement = event.target;
+        while (clickedElement && clickedElement !== document.body) {
+            if (clickedElement.classList && clickedElement.classList.contains('keyboard-key-item')) {
+                const zoneId = clickedElement.dataset.zoneId;
+                if (zoneId) {
+                    const zone = this.zoneManager.getZoneById(zoneId);
+                    if (zone) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this._triggerZone(zone);
+                        return;
+                    }
+                }
+            }
+            clickedElement = clickedElement.parentElement;
+        }
+        
+        // Otherwise, check for trigger zone element
         const zone = this.zoneManager.getZoneByElement(event.target);
         if (zone) {
             // Prevent default to avoid double-triggering on mobile

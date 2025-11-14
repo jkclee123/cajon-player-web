@@ -126,6 +126,11 @@ body {
     border-radius: 6px;
     border: 1px solid #555;
     transition: all 0.2s ease;
+    cursor: pointer;
+    /* Performance optimizations for mobile */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
 }
 
 .keyboard-key-item .key {
