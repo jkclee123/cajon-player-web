@@ -4,7 +4,7 @@
 (function () {
     class DebugLogger {
         static initialized = false;
-        static enabled = true; // Set to false to disable all logging
+        static enabled = false; // Set to false to disable all logging
         static contentEl = null;
         static panelEl = null;
         static maxLines = 500;
