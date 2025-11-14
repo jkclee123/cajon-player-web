@@ -23,9 +23,6 @@ class App {
         this.loadingIndicator = null;
         this.errorMessage = null;
         this.keyboardHint = null;
-        this.keyRecordingPopup = null;
-        this.currentRecordingZoneId = null;
-        this.keyRecordingHandler = null;
     }
 
     /**
@@ -90,9 +87,6 @@ class App {
             // Set up keyboard hint UI
             this._setupKeyboardHint();
             
-            // Set up key recording popup
-            this._setupKeyRecording();
-            
             // Hide loading indicator
             if (this.loadingIndicator) {
                 this.loadingIndicator.classList.add('hidden');
@@ -153,123 +147,24 @@ class App {
             item.className = 'keyboard-key-item';
             item.dataset.zoneId = zone.id;
             
-            const keySpan = document.createElement('span');
-            keySpan.className = 'key';
-            keySpan.textContent = zone.keyboardKey.toUpperCase();
+            // const keySpan = document.createElement('span');
+            // keySpan.className = 'key';
+            // Support both single key (string) and multiple keys (array)
+            // const keys = Array.isArray(zone.keyboardKey) ? zone.keyboardKey : [zone.keyboardKey];
+            // keySpan.textContent = keys.map(k => k.toUpperCase()).join(', ');
             
             const nameSpan = document.createElement('span');
             nameSpan.className = 'sound-name';
             nameSpan.textContent = zone.name;
             
-            item.appendChild(keySpan);
+            // item.appendChild(keySpan);
             item.appendChild(nameSpan);
-            
-            // Add click handler for key programming
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this._startKeyRecording(zone.id, keySpan);
-            });
             
             keyboardKeysDiv.appendChild(item);
         });
         
         // Show keyboard hint
         this.keyboardHint.style.display = 'block';
-    }
-
-    /**
-     * Sets up key recording popup
-     * @private
-     */
-    _setupKeyRecording() {
-        this.keyRecordingPopup = document.getElementById('key-recording-popup');
-        if (!this.keyRecordingPopup) return;
-    }
-
-    /**
-     * Starts key recording for a zone
-     * @private
-     */
-    _startKeyRecording(zoneId, keySpanElement) {
-        if (!this.keyRecordingPopup) return;
-        
-        this.currentRecordingZoneId = zoneId;
-        
-        // Show popup
-        this.keyRecordingPopup.style.display = 'block';
-        const recordedKeyDiv = this.keyRecordingPopup.querySelector('.recorded-key');
-        recordedKeyDiv.textContent = '';
-        
-        // Temporarily disable input handler to prevent conflicts
-        if (this.inputHandler) {
-            this.inputHandler.disable();
-        }
-        
-        // Create one-time keydown handler
-        this.keyRecordingHandler = (event) => {
-            // Ignore modifier keys
-            if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) {
-                return;
-            }
-            
-            // Ignore Escape key (could be used to cancel)
-            if (event.key === 'Escape') {
-                document.removeEventListener('keydown', this.keyRecordingHandler, { capture: true });
-                this._cancelKeyRecording();
-                return;
-            }
-            
-            // Get the key
-            const key = event.key.toLowerCase();
-            
-            // Only accept letter keys and numbers
-            if (key.length === 1 && /[a-z0-9]/.test(key)) {
-                event.preventDefault();
-                event.stopPropagation();
-                
-                // Remove handler immediately to prevent multiple triggers
-                document.removeEventListener('keydown', this.keyRecordingHandler, { capture: true });
-                
-                // Update the zone key
-                this.zoneManager.updateZoneKey(zoneId, key);
-                
-                // Update the UI
-                keySpanElement.textContent = key.toUpperCase();
-                
-                // Show recorded key briefly
-                recordedKeyDiv.textContent = key.toUpperCase();
-                
-                // Close popup after a short delay
-                setTimeout(() => {
-                    this._cancelKeyRecording();
-                }, 500);
-            }
-        };
-        
-        // Add event listener with capture to catch before input handler
-        document.addEventListener('keydown', this.keyRecordingHandler, { capture: true });
-    }
-
-    /**
-     * Cancels key recording
-     * @private
-     */
-    _cancelKeyRecording() {
-        if (this.keyRecordingHandler) {
-            document.removeEventListener('keydown', this.keyRecordingHandler, { capture: true });
-            this.keyRecordingHandler = null;
-        }
-        
-        // Re-enable input handler
-        if (this.inputHandler) {
-            this.inputHandler.enable();
-        }
-        
-        if (this.keyRecordingPopup) {
-            this.keyRecordingPopup.style.display = 'none';
-        }
-        
-        this.currentRecordingZoneId = null;
     }
 
     /**

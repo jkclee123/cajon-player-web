@@ -16,7 +16,11 @@ class TriggerZoneManager {
         this.zones.forEach(zone => {
             this.zoneConfigs.set(zone.id, zone);
             if (zone.keyboardKey) {
-                this.zoneByKey.set(zone.keyboardKey.toLowerCase(), zone);
+                // Support both single key (string) and multiple keys (array)
+                const keys = Array.isArray(zone.keyboardKey) ? zone.keyboardKey : [zone.keyboardKey];
+                keys.forEach(key => {
+                    this.zoneByKey.set(key.toLowerCase(), zone);
+                });
             }
         });
     }
@@ -124,27 +128,5 @@ class TriggerZoneManager {
         }
     }
 
-    /**
-     * Updates the keyboard key for a zone
-     * @param {string} zoneId - Zone identifier
-     * @param {string} newKey - New keyboard key
-     */
-    updateZoneKey(zoneId, newKey) {
-        const zone = this.zoneConfigs.get(zoneId);
-        if (!zone) {
-            throw new Error(`Zone ${zoneId} not found`);
-        }
-
-        // Remove old key mapping
-        if (zone.keyboardKey) {
-            this.zoneByKey.delete(zone.keyboardKey.toLowerCase());
-        }
-
-        // Update zone config
-        zone.keyboardKey = newKey.toLowerCase();
-
-        // Add new key mapping
-        this.zoneByKey.set(newKey.toLowerCase(), zone);
-    }
 }
 
