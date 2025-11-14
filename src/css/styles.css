@@ -12,6 +12,9 @@ html {
     /* Prevent double-tap-to-zoom on mobile */
     touch-action: manipulation;
     -ms-touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 body {
@@ -25,6 +28,9 @@ body {
     /* Prevent double-tap-to-zoom on mobile */
     touch-action: manipulation;
     -ms-touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 #app {
@@ -82,8 +88,8 @@ body {
 /* Trigger zone base styles */
 .trigger-zone {
     position: absolute;
-    background: hsla(0, 0%, 50%, 0.4);
-    border: 2px solid hsla(0, 0%, 50%, 1);
+    background: hsla(0, 0%, 50%, 0.3);
+    border: 2px solid hsla(0, 0%, 50%, 0.7);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.1s ease;
@@ -95,12 +101,12 @@ body {
 }
 
 .trigger-zone:hover {
-    background: hsla(0, 0%, 50%, 0.6);
+    background: hsla(0, 0%, 50%, 0.5);
     border-color: hsla(0, 0%, 50%, 1);
 }
 
 .trigger-zone.active {
-    background: hsla(229, 76%, 66%, 0.7);
+    background: hsla(229, 76%, 66%, 0.6);
     border-color: hsla(229, 76%, 66%, 1);
     transform: scale(1.02);
     box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
