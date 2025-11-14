@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cajon Player</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+    <div id="app">
+        <div id="loading-indicator">Loading sounds...</div>
+        <div id="cajon-container">
+            <img id="cajon-image" src="src/assets/images/cajon.svg" alt="Cajon drum" onerror="this.style.display='none'">
+            <!-- Trigger zones will be added here dynamically -->
+        </div>
+        <div id="keyboard-hint">
+            <h3>Keyboard Controls</h3>
+            <div id="keyboard-keys"></div>
+        </div>
+        <div id="error-message" style="display: none;"></div>
+    </div>
+    <script src="src/js/zone-config.js"></script>
+    <script src="src/js/audio-manager.js"></script>
+    <script src="src/js/trigger-zones.js"></script>
+    <script src="src/js/input-handler.js"></script>
+    <script src="src/js/app.js"></script>
+    <script>
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            const app = new App({
+                zones: ZONE_CONFIG,
+                sounds: SOUND_FILES
+            });
+            
+            try {
+                await app.init();
+                window.cajonApp = app; // Make available for debugging
+            } catch (error) {
+                console.error('Failed to initialize app:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
