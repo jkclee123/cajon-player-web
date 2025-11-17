@@ -8,25 +8,33 @@ const ZONE_CONFIG = [
         id: "kick",
         name: "Kick",
         soundFile: "src/assets/sounds/kick.mp3",
+        volume: 1.5,
+        keyboardKey: ["r", "u", "ArrowDown"],
+        coordinates: { x: 0, y: 0, width: 50, height: 30 }
+    },
+    {
+        id: "cymbal",
+        name: "Cymbal",
+        soundFile: "src/assets/sounds/cymbal.mp3",
         volume: 1,
-        keyboardKey: ["`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "backspace", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\\"],
-        coordinates: { x: 0, y: 0, width: 100, height: 100 }
+        keyboardKey: [" ", "Enter", "ArrowUp"],
+        coordinates: { x: 50, y: 0, width: 50, height: 30 }
     },
     {
         id: "snare",
         name: "Snare",
         soundFile: "src/assets/sounds/snare.mp3",
-        volume: 1,
-        keyboardKey: ["z", "x", "c", "v", "b", "n", "m", ","],
-        coordinates: { x: 42, y: 80, width: 16, height: 20 }
+        volume: 1.2,
+        keyboardKey: ["e", "i", "ArrowLeft"],
+        coordinates: { x: 0, y: 70, width: 50, height: 30 }
     },
     {
         id: "snare-quiet",
         name: "Snare Quiet",
         soundFile: "src/assets/sounds/snare.mp3",
-        volume: 0.3,
-        keyboardKey: ["a", "s", "d", "f", "g", "h", "j", "k"],
-        coordinates: { x: 42, y: 80, width: 16, height: 20 }
+        volume: 0.4,
+        keyboardKey: ["w", "o", "ArrowRight"],
+        coordinates: { x: 50, y: 70, width: 50, height: 30 }
     }
 ];
 
