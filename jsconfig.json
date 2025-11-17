@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "checkJs": false
+  },
+  "exclude": [
+    "tmp/**",
+    "node_modules/**"
+  ]
+}
+
+

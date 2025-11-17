@@ -15,12 +15,19 @@ html {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    /* Prevent scrolling */
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    position: fixed;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: hsl(0, 2%, 15%);
     min-height: 100vh;
+    height: 100%;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -31,6 +38,11 @@ body {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    /* Prevent scrolling */
+    overflow: hidden;
+    position: fixed;
+    /* Prevent pinch zoom */
+    -webkit-user-zoom: fixed;
 }
 
 #app {
@@ -38,7 +50,9 @@ body {
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); */
     max-width: 1500px;
-    width: 100%; 
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 /* Loading indicator */
@@ -62,7 +76,6 @@ body {
     margin: 0 auto;
     border-radius: 8px;
     padding: 30px;
-    min-height: 500px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -75,7 +88,6 @@ body {
     width: 100%;
     height: auto;
     display: block;
-    border-radius: 4px;
     user-select: none;
     -webkit-user-drag: none;
     -moz-user-select: none;
@@ -112,63 +124,6 @@ body {
     box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
 }
 
-/* Keyboard hint */
-#keyboard-hint {
-    margin-top: 30px;
-    padding: 20px;
-    background: #3a3a3a;
-    border-radius: 8px;
-}
-
-#keyboard-hint h3 {
-    margin-bottom: 15px;
-    color: #ffffff;
-    font-size: 18px;
-}
-
-#keyboard-keys {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.keyboard-key-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #4a4a4a;
-    border-radius: 6px;
-    border: 1px solid #555;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    /* Performance optimizations for mobile */
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-}
-
-.keyboard-key-item .key {
-    background: #667eea;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 14px;
-    min-width: 28px;
-    text-align: center;
-    transition: background 0.2s ease;
-}
-
-.keyboard-key-item:hover .key {
-    background: #8b9aff;
-}
-
-.keyboard-key-item .sound-name {
-    font-size: 16px;
-    color: #ffffff;
-}
-
 /* Error message */
 #error-message {
     margin-top: 20px;
@@ -184,15 +139,6 @@ body {
 }
 
 /* Responsive design */
-@media (max-width: 768px) {    
-    #cajon-container {
-        padding: 15px;
-    }
-    
-    .trigger-zone {
-        /* Ensure touch targets are large enough */
-        min-width: 44px;
-        min-height: 44px;
-    }
+@media (max-width: 768px) {   
 }
 

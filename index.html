@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#FF9811">
     <meta name="description" content="An interactive web-based cajon percussion instrument player">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,20 +18,8 @@
     <link rel="stylesheet" href="src/css/styles.css">
     <link rel="stylesheet" href="src/css/debug-logger.css">
     <!-- Preload audio files for faster loading on mobile -->
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-snare-1.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-snare-2.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-on-snare-2.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-on-snare-3.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-on-snare-4.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-snare-roll-slow-3.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-snare-roll-slow-4.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-snare-roll-fast-2.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-on-snare-roll-5.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-kick-damp-3.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-kick-damp-4.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-off-kick-4.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-on-kick-damp-3.mp3">
-    <link rel="preload" as="audio" href="src/assets/sounds/cajon-on-kick-damp-4.mp3">
+    <link rel="preload" as="audio" href="src/assets/sounds/kick.mp3">
+    <link rel="preload" as="audio" href="src/assets/sounds/snare.mp3">
 </head>
 <body>
     <div id="app">
@@ -45,9 +33,6 @@
         <div id="cajon-container">
             <img id="cajon-image" src="src/assets/images/cajon.svg" alt="Cajon drum" draggable="false" onerror="this.style.display='none'">
             <!-- Trigger zones will be added here dynamically -->
-        </div>
-        <div id="keyboard-hint">
-            <div id="keyboard-keys"></div>
         </div>
         <div id="error-message" style="display: none;"></div>
     </div>
@@ -81,6 +66,31 @@
                     });
             });
         }
+
+        // Prevent scroll and zoom
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('touchmove', (e) => {
+            // Allow touchmove only for trigger zones and interactive elements
+            const target = e.target;
+            if (!target.closest('.trigger-zone') && !target.closest('button')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gesturechange', (e) => {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gestureend', (e) => {
+            e.preventDefault();
+        });
 
         // Initialize app when DOM is ready
         document.addEventListener('DOMContentLoaded', async () => {

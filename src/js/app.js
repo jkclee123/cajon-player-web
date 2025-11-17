@@ -100,9 +100,6 @@ class App {
             });
             this.inputHandler.initialize();
             
-            // Set up keyboard hint UI
-            this._setupKeyboardHint();
-            
             // Hide loading indicator
             if (this.loadingIndicator) {
                 this.loadingIndicator.classList.add('hidden');
@@ -159,38 +156,6 @@ class App {
             this.errorMessage.classList.remove('show');
             this.errorMessage.style.display = 'none';
         }
-    }
-
-    /**
-     * Sets up keyboard hint UI
-     * @private
-     */
-    _setupKeyboardHint() {
-        if (!this.keyboardHint) return;
-        
-        const keyboardKeysDiv = document.getElementById('keyboard-keys');
-        if (!keyboardKeysDiv) return;
-        
-        // Get all zones with keyboard keys
-        const zonesWithKeys = this.zones.filter(zone => zone.keyboardKey);
-        
-        // Create keyboard hint items
-        zonesWithKeys.forEach(zone => {
-            const item = document.createElement('div');
-            item.className = 'keyboard-key-item';
-            item.dataset.zoneId = zone.id;
-            
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'sound-name';
-            nameSpan.textContent = zone.name;
-            
-            item.appendChild(nameSpan);
-            
-            keyboardKeysDiv.appendChild(item);
-        });
-        
-        // Show keyboard hint
-        this.keyboardHint.style.display = 'block';
     }
 
     /**

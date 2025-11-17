@@ -257,11 +257,13 @@ class InputHandler {
         }
         
         // Play sound - await to ensure it completes (critical for first tap on iOS)
+        // Use zone volume if specified, default to 1.0
+        const volume = zone.volume !== undefined ? zone.volume : 1.0;
         if (window.DebugLogger) {
-            window.DebugLogger.log('_triggerZone: play', zone.id, '->', zone.soundFile);
+            window.DebugLogger.log('_triggerZone: play', zone.id, '->', zone.soundFile, 'volume=', volume);
         }
         try {
-            await this.audioManager.playSound(zone.soundFile);
+            await this.audioManager.playSound(zone.soundFile, volume);
         } catch (error) {
             console.error(`Failed to play sound for zone ${zone.id}:`, error);
             if (window.DebugLogger) {

@@ -283,9 +283,10 @@ class AudioManager {
      * Plays a sound from the specified path
      * Uses AudioBufferSourceNode for instant playback
      * @param {string} soundPath - Path to the sound file
+     * @param {number} volume - Volume level (0.0 to 1.0, default: 1.0)
      * @returns {Promise<void>}
      */
-    async playSound(soundPath) {
+    async playSound(soundPath, volume = 1.0) {
         if (!this.audioBuffers.has(soundPath)) {
             throw new Error(`Sound file not found: ${soundPath}`);
         }
@@ -309,7 +310,14 @@ class AudioManager {
         // Create a new source node for this playback
         const sourceNode = this.audioContext.createBufferSource();
         sourceNode.buffer = audioBuffer;
-        sourceNode.connect(this.audioContext.destination);
+        
+        // Create gain node for volume control
+        const gainNode = this.audioContext.createGain();
+        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+        
+        // Connect: source -> gain -> destination
+        sourceNode.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
         
         // Clean up source node when playback ends
         sourceNode.onended = () => {
@@ -319,7 +327,7 @@ class AudioManager {
         try {
             // Start playback immediately (0 = now)
             if (window.DebugLogger) {
-                window.DebugLogger.log('playSound: starting', soundPath, 'ctxState=', this.audioContext.state, 'unlocked=', this.isContextUnlocked);
+                window.DebugLogger.log('playSound: starting', soundPath, 'volume=', volume, 'ctxState=', this.audioContext.state, 'unlocked=', this.isContextUnlocked);
             }
             sourceNode.start(0);
             if (window.DebugLogger) {
