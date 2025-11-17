@@ -24,15 +24,15 @@ const ZONE_CONFIG = [
         id: "snare",
         name: "Snare",
         soundFile: "src/assets/sounds/snare.mp3",
-        volume: 1.2,
+        volume: 1,
         keyboardKey: ["e", "i", "ArrowLeft"],
         coordinates: { x: 0, y: 70, width: 50, height: 30 }
     },
     {
-        id: "snare-quiet",
-        name: "Snare Quiet",
-        soundFile: "src/assets/sounds/snare.mp3",
-        volume: 0.3,
+        id: "snare-2",
+        name: "Snare 2",
+        soundFile: "src/assets/sounds/snare-2.mp3",
+        volume: 1.9,
         keyboardKey: ["w", "o", "ArrowRight"],
         coordinates: { x: 50, y: 70, width: 50, height: 30 }
     }
