@@ -120,8 +120,8 @@ body {
 }
 
 .trigger-zone.active {
-    background: hsla(229, 76%, 66%, 0.6);
-    border-color: hsla(229, 76%, 66%, 1);
+    background: hsla(127, 76%, 42%, 0.6);
+    border-color: hsl(127, 76%, 42%);
     transform: scale(1.02);
     box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
 }

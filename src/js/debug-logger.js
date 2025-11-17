@@ -62,10 +62,10 @@
         }
 
         static log(...args) {
+            if (!this.enabled) return;
+
             // Always mirror to console (even when disabled)
             try { console.log('[DBG]', ...args); } catch (_) {}
-
-            if (!this.enabled) return;
 
             if (!this.initialized) this.init();
             if (!this.contentEl) return;

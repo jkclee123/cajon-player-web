@@ -305,7 +305,7 @@ class InputHandler {
         // Linear interpolation: volume = 0.4 + 0.6 * (1 - normalizedDistance)
         // Center (normalizedDistance = 0): volume = 0.4 + 0.6 * 1 = 1.0
         // Edge (normalizedDistance = 1): volume = 0.4 + 0.6 * 0 = 0.4
-        const volume = 0 + 1 * (1 - normalizedDistance);
+        const volume = 1 - normalizedDistance;
         
         // Apply zone's base volume multiplier if specified
         const baseVolume = zone.volume !== undefined ? zone.volume : 1.0;

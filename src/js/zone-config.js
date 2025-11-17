@@ -16,7 +16,7 @@ const ZONE_CONFIG = [
         id: "cymbal",
         name: "Cymbal",
         soundFile: "src/assets/sounds/cymbal.mp3",
-        volume: 1,
+        volume: 1.2,
         keyboardKey: [" ", "Enter", "ArrowUp"],
         coordinates: { x: 50, y: 0, width: 50, height: 30 }
     },
