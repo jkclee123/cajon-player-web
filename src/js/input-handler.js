@@ -289,23 +289,11 @@ class InputHandler {
         // Calculate distance from click to center
         const dx = clickX - centerX;
         const dy = clickY - centerY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // Calculate maximum distance (from center to corner)
-        const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
-        
-        // If maxDistance is 0 (shouldn't happen), return default volume
-        if (maxDistance === 0) {
-            return zone.volume !== undefined ? zone.volume : 1.0;
-        }
-        
-        // Calculate normalized distance (0 = center, 1 = edge)
-        const normalizedDistance = Math.min(distance / maxDistance, 1.0);
-        
-        // Linear interpolation: volume = 0.4 + 0.6 * (1 - normalizedDistance)
-        // Center (normalizedDistance = 0): volume = 0.4 + 0.6 * 1 = 1.0
-        // Edge (normalizedDistance = 1): volume = 0.4 + 0.6 * 0 = 0.4
-        const volume = 1 - normalizedDistance;
+        const xRatio = Math.abs(dx / centerX);
+        const yRatio = Math.abs(dy / centerY);
+        const ratio = Math.max(xRatio, yRatio);
+        const volume = 1 - ratio;
         
         // Apply zone's base volume multiplier if specified
         const baseVolume = zone.volume !== undefined ? zone.volume : 1.0;
@@ -318,9 +306,9 @@ class InputHandler {
                 clickY: clickY.toFixed(1),
                 centerX: centerX.toFixed(1),
                 centerY: centerY.toFixed(1),
-                distance: distance.toFixed(1),
-                maxDistance: maxDistance.toFixed(1),
-                normalizedDistance: normalizedDistance.toFixed(2),
+                xRatio: xRatio.toFixed(2),
+                yRatio: yRatio.toFixed(2),
+                ratio: ratio.toFixed(2),
                 volume: volume.toFixed(2),
                 baseVolume: baseVolume,
                 finalVolume: finalVolume.toFixed(2)
