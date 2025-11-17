@@ -98,6 +98,7 @@ class InputHandler {
         // Find zone first (before async operations)
         let zone = null;
         let clickedElement = event.target;
+        let zoneElement = null;
         
         if (window.DebugLogger) {
             try {
@@ -106,12 +107,14 @@ class InputHandler {
         }
         
         // Check if clicked element is a keyboard-key-item
+        let isKeyboardKeyItem = false;
         while (clickedElement && clickedElement !== document.body) {
             if (clickedElement.classList && clickedElement.classList.contains('keyboard-key-item')) {
                 const zoneId = clickedElement.dataset.zoneId;
                 if (zoneId) {
                     zone = this.zoneManager.getZoneById(zoneId);
                     if (zone) {
+                        isKeyboardKeyItem = true;
                         event.preventDefault();
                         event.stopPropagation();
                         if (window.DebugLogger) {
@@ -128,6 +131,8 @@ class InputHandler {
         if (!zone) {
             zone = this.zoneManager.getZoneByElement(event.target);
             if (zone) {
+                // Find the actual zone DOM element
+                zoneElement = this.zoneManager.zoneElements.get(zone.id);
                 event.preventDefault();
                 event.stopPropagation();
                 if (window.DebugLogger) {
@@ -139,6 +144,20 @@ class InputHandler {
                 }
                 return; // No zone found, exit early
             }
+        } else {
+            // For keyboard-key-item clicks, find the zone element
+            zoneElement = this.zoneManager.zoneElements.get(zone.id);
+        }
+        
+        // Calculate volume based on click position within zone
+        // For keyboard-key-item clicks, use center volume (1.0) since click is not on zone element
+        let volume = zone.volume !== undefined ? zone.volume : 1.0;
+        if (zoneElement && !isKeyboardKeyItem) {
+            volume = this._calculateVolumeFromClickPosition(event, zoneElement, zone);
+        } else if (isKeyboardKeyItem) {
+            // For keyboard-key-item clicks, use center volume (1.0) multiplied by zone base volume
+            const baseVolume = zone.volume !== undefined ? zone.volume : 1.0;
+            volume = 1.0 * baseVolume;
         }
         
         // CRITICAL: Unlock audio context BEFORE playing sound, but within the same gesture handler
@@ -166,7 +185,7 @@ class InputHandler {
         
         // Now trigger zone - unlock is complete, so playSound should work
         if (zone) {
-            await this._triggerZone(zone);
+            await this._triggerZone(zone, volume);
         }
     }
 
@@ -243,11 +262,82 @@ class InputHandler {
     }
 
     /**
-     * Triggers a zone (plays sound and activates visual feedback)
-     * Visual feedback is triggered IMMEDIATELY, audio plays after unlock completes
+     * Calculates volume based on click position within zone
+     * Center = 100% volume, Edge = 40% volume, linear interpolation
+     * @param {PointerEvent} event - The pointer event
+     * @param {HTMLElement} zoneElement - The zone DOM element
+     * @param {Object} zone - The zone configuration
+     * @returns {number} Volume multiplier (0.4 to 1.0)
      * @private
      */
-    async _triggerZone(zone) {
+    _calculateVolumeFromClickPosition(event, zoneElement, zone) {
+        if (!zoneElement) {
+            return zone.volume !== undefined ? zone.volume : 1.0;
+        }
+        
+        // Get zone element's bounding rectangle
+        const rect = zoneElement.getBoundingClientRect();
+        
+        // Calculate click position relative to zone element
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+        
+        // Calculate zone center
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        // Calculate distance from click to center
+        const dx = clickX - centerX;
+        const dy = clickY - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Calculate maximum distance (from center to corner)
+        const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
+        
+        // If maxDistance is 0 (shouldn't happen), return default volume
+        if (maxDistance === 0) {
+            return zone.volume !== undefined ? zone.volume : 1.0;
+        }
+        
+        // Calculate normalized distance (0 = center, 1 = edge)
+        const normalizedDistance = Math.min(distance / maxDistance, 1.0);
+        
+        // Linear interpolation: volume = 0.4 + 0.6 * (1 - normalizedDistance)
+        // Center (normalizedDistance = 0): volume = 0.4 + 0.6 * 1 = 1.0
+        // Edge (normalizedDistance = 1): volume = 0.4 + 0.6 * 0 = 0.4
+        const volume = 0 + 1 * (1 - normalizedDistance);
+        
+        // Apply zone's base volume multiplier if specified
+        const baseVolume = zone.volume !== undefined ? zone.volume : 1.0;
+        const finalVolume = volume * baseVolume;
+        
+        if (window.DebugLogger) {
+            window.DebugLogger.log('_calculateVolumeFromClickPosition:', {
+                zoneId: zone.id,
+                clickX: clickX.toFixed(1),
+                clickY: clickY.toFixed(1),
+                centerX: centerX.toFixed(1),
+                centerY: centerY.toFixed(1),
+                distance: distance.toFixed(1),
+                maxDistance: maxDistance.toFixed(1),
+                normalizedDistance: normalizedDistance.toFixed(2),
+                volume: volume.toFixed(2),
+                baseVolume: baseVolume,
+                finalVolume: finalVolume.toFixed(2)
+            });
+        }
+        
+        return finalVolume;
+    }
+
+    /**
+     * Triggers a zone (plays sound and activates visual feedback)
+     * Visual feedback is triggered IMMEDIATELY, audio plays after unlock completes
+     * @param {Object} zone - Zone configuration
+     * @param {number} volume - Volume multiplier (optional, defaults to zone.volume or 1.0)
+     * @private
+     */
+    async _triggerZone(zone, volume = null) {
         // Activate visual feedback IMMEDIATELY (before audio)
         this.zoneManager.activateZone(zone.id);
         
@@ -256,14 +346,13 @@ class InputHandler {
             this.onZoneActivated(zone.id);
         }
         
-        // Play sound - await to ensure it completes (critical for first tap on iOS)
-        // Use zone volume if specified, default to 1.0
-        const volume = zone.volume !== undefined ? zone.volume : 1.0;
+        // Use provided volume, or fall back to zone volume, or default to 1.0
+        const finalVolume = volume !== null ? volume : (zone.volume !== undefined ? zone.volume : 1.0);
         if (window.DebugLogger) {
-            window.DebugLogger.log('_triggerZone: play', zone.id, '->', zone.soundFile, 'volume=', volume);
+            window.DebugLogger.log('_triggerZone: play', zone.id, '->', zone.soundFile, 'volume=', finalVolume);
         }
         try {
-            await this.audioManager.playSound(zone.soundFile, volume);
+            await this.audioManager.playSound(zone.soundFile, finalVolume);
         } catch (error) {
             console.error(`Failed to play sound for zone ${zone.id}:`, error);
             if (window.DebugLogger) {
